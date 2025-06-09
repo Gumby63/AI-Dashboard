@@ -1,0 +1,363 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>AI Providers Dashboard</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <style>
+    body {
+      font-family: 'Segoe UI', Arial, sans-serif;
+      background: #f9f9f9;
+      margin: 0;
+      padding: 0;
+      min-height: 100vh;
+    }
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 32px 16px;
+    }
+    h1 {
+      font-size: 2.3em;
+      margin-top: 0;
+      margin-bottom: 0.6em;
+      font-weight: 600;
+    }
+    .providers {
+      display: flex;
+      gap: 24px;
+      flex-wrap: wrap;
+      margin-bottom: 32px;
+    }
+    .provider-card {
+      background: #fff;
+      border: 3px solid #eee;
+      border-radius: 12px;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.04);
+      padding: 20px;
+      width: 260px;
+      cursor: pointer;
+      transition: border 0.2s, box-shadow 0.2s;
+      margin-bottom: 14px;
+    }
+    .provider-card.selected {
+      box-shadow: 0 6px 18px rgba(0,0,0,0.10);
+    }
+    .provider-card h2 {
+      font-size: 1.3em;
+      margin: 0 0 10px;
+      font-weight: 700;
+    }
+    .capabilities-table-container {
+      overflow-x: auto;
+      margin-bottom: 40px;
+    }
+    table {
+      border-radius: 10px;
+      border-collapse: collapse;
+      min-width: 950px;
+      width: 100%;
+      background: #fff;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+      font-size: 1em;
+      margin-bottom: 0;
+    }
+    th, td {
+      padding: 10px;
+      text-align: center;
+    }
+    th {
+      background: #f0f0f0;
+      font-weight: 700;
+    }
+    td:first-child, th:first-child {
+      text-align: left;
+      font-weight: 600;
+      background: #fcfcfc;
+    }
+    td.selected {
+      background: #e6f5ff;
+      font-weight: bold;
+    }
+    .details-panel {
+      background: #fff;
+      border-radius: 10px;
+      padding: 24px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+      margin-bottom: 35px;
+    }
+    .details-panel h2 {
+      margin-top: 0;
+      margin-bottom: 14px;
+      font-size: 1.3em;
+      font-weight: 700;
+    }
+    .details-panel ul {
+      font-size: 1.08em;
+      line-height: 1.7;
+      padding-left: 20px;
+      margin-bottom: 0;
+    }
+    .details-panel h3 {
+      margin-top: 22px;
+      margin-bottom: 10px;
+      font-size: 1.08em;
+      font-weight: 700;
+    }
+    @media (max-width: 900px) {
+      .providers {
+        flex-direction: column;
+        gap: 12px;
+      }
+      table, .capabilities-table-container {
+        min-width: 100vw;
+      }
+      .provider-card {
+        width: 95vw;
+        max-width: 380px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>AI Providers Dashboard</h1>
+    <div class="providers" id="providers-list">
+      <!-- Provider cards inserted by JS -->
+    </div>
+    <h2>Capabilities Comparison</h2>
+    <div class="capabilities-table-container">
+      <table id="capabilities-table">
+        <!-- Table inserted by JS -->
+      </table>
+    </div>
+    <div class="details-panel" id="details-panel" style="display:none;">
+      <!-- Details inserted by JS -->
+    </div>
+  </div>
+  <script>
+    // Provider & color data
+    const providers = [
+      {
+        name: "Google Gemini",
+        color: "#F6C026",
+        currentModels: "Gemini 2.5 Pro, 2.5 Flash, 2.0 Flash",
+        strengths: "Reasoning, multimodal, thinking capabilities",
+        access: "Gemini app, Google AI Studio, Workspace",
+        features: "Deep Research, thinking budgets, native audio"
+      },
+      {
+        name: "OpenAI ChatGPT",
+        color: "#10A37F",
+        currentModels: "GPT-4.1, GPT-4o, o4-mini",
+        strengths: "General intelligence, coding, instruction following",
+        access: "ChatGPT web/app, Playground, API",
+        features: "Custom GPTs, DALL-E integration, reasoning"
+      },
+      {
+        name: "Meta AI",
+        color: "#1877F2",
+        currentModels: "Llama 4 Scout, Llama 4 Maverick, Llama 4 (upcoming)",
+        strengths: "Open-source, multimodal, conversation",
+        access: "Meta AI web, WhatsApp, Instagram, Facebook",
+        features: "Voice conversations, photo editing, real-time"
+      },
+      {
+        name: "xAI Grok",
+        color: "#FFAD1F",
+        currentModels: "Grok 3, Grok 3 mini",
+        strengths: "Real-time web data, thinking models, speed",
+        access: "X platform, xAI API",
+        features: "DeepSearch, X integration, political discussion"
+      },
+      {
+        name: "Perplexity AI",
+        color: "#5F48D6",
+        currentModels: "Sonar Large, GPT-4.1, Claude 4.0 Sonnet",
+        strengths: "Web search integration, research capabilities",
+        access: "Perplexity.ai web/app, API",
+        features: "Pro Search, Deep Research, file analysis"
+      },
+      {
+        name: "Microsoft Copilot",
+        color: "#3A96DD",
+        currentModels: "GPT-4o, GPT-4 Turbo (via Azure AI)",
+        strengths: "Microsoft 365 integration, enterprise features",
+        access: "Windows, Microsoft 365 apps, web",
+        features: "Agent orchestration, enterprise security"
+      }
+    ];
+    // Capabilities matrix
+    const capabilities = [
+      {
+        capability: "Reasoning/Thinking",
+        "Google Gemini": "✓ Advanced",
+        "OpenAI ChatGPT": "✓ Advanced",
+        "Meta AI": "✓ Basic",
+        "xAI Grok": "✓ Advanced",
+        "Perplexity AI": "✓ Limited",
+        "Microsoft Copilot": "✓ Basic"
+      },
+      {
+        capability: "Web Search",
+        "Google Gemini": "✓ Limited",
+        "OpenAI ChatGPT": "✗ No",
+        "Meta AI": "✗ No",
+        "xAI Grok": "✓ Real-time",
+        "Perplexity AI": "✓ Excellent",
+        "Microsoft Copilot": "✓ Basic"
+      },
+      {
+        capability: "Multimodal Input",
+        "Google Gemini": "✓ Full",
+        "OpenAI ChatGPT": "✓ Full",
+        "Meta AI": "✓ Full",
+        "xAI Grok": "✓ Limited",
+        "Perplexity AI": "✓ Basic",
+        "Microsoft Copilot": "✓ Full"
+      },
+      {
+        capability: "Real-time Data",
+        "Google Gemini": "✓ Limited",
+        "OpenAI ChatGPT": "✗ No",
+        "Meta AI": "✗ No",
+        "xAI Grok": "✓ X Posts",
+        "Perplexity AI": "✓ Real-time",
+        "Microsoft Copilot": "✗ No"
+      },
+      {
+        capability: "Code Generation",
+        "Google Gemini": "✓ Strong",
+        "OpenAI ChatGPT": "✓ Excellent",
+        "Meta AI": "✓ Good",
+        "xAI Grok": "✓ Good",
+        "Perplexity AI": "✓ Good",
+        "Microsoft Copilot": "✓ Good"
+      },
+      {
+        capability: "File Analysis",
+        "Google Gemini": "✓ Yes",
+        "OpenAI ChatGPT": "✓ Yes",
+        "Meta AI": "✓ Limited",
+        "xAI Grok": "✗ No",
+        "Perplexity AI": "✓ Yes",
+        "Microsoft Copilot": "✓ Yes"
+      },
+      {
+        capability: "Image Generation",
+        "Google Gemini": "✗ No",
+        "OpenAI ChatGPT": "✓ DALL-E",
+        "Meta AI": "✓ Yes",
+        "xAI Grok": "✗ No",
+        "Perplexity AI": "✓ Yes",
+        "Microsoft Copilot": "✓ Designer"
+      },
+      {
+        capability: "Voice Input",
+        "Google Gemini": "✓ Yes",
+        "OpenAI ChatGPT": "✓ Yes",
+        "Meta AI": "✓ Yes",
+        "xAI Grok": "✗ No",
+        "Perplexity AI": "✗ No",
+        "Microsoft Copilot": "✓ Yes"
+      },
+      {
+        capability: "Enterprise Integration",
+        "Google Gemini": "✓ Workspace",
+        "OpenAI ChatGPT": "✓ API",
+        "Meta AI": "✓ Limited",
+        "xAI Grok": "✗ No",
+        "Perplexity AI": "✓ API",
+        "Microsoft Copilot": "✓ Excellent"
+      },
+      {
+        capability: "Custom Models/Agents",
+        "Google Gemini": "✓ Limited",
+        "OpenAI ChatGPT": "✓ Custom GPTs",
+        "Meta AI": "✗ No",
+        "xAI Grok": "✗ No",
+        "Perplexity AI": "✗ No",
+        "Microsoft Copilot": "✓ Agents"
+      }
+    ];
+
+    // Provider cards rendering
+    const providersListDiv = document.getElementById('providers-list');
+    let selectedProvider = null;
+
+    function renderProviders() {
+      providersListDiv.innerHTML = '';
+      providers.forEach((prov, idx) => {
+        const card = document.createElement('div');
+        card.className = 'provider-card' + (selectedProvider === idx ? ' selected' : '');
+        card.style.borderColor = (selectedProvider === idx ? prov.color : '#eee');
+        card.innerHTML = `
+          <h2 style="color:${prov.color}">${prov.name}</h2>
+          <div><b>Current Models:</b> ${prov.currentModels}</div>
+          <div><b>Key Strengths:</b> ${prov.strengths}</div>
+          <div><b>Access Points:</b> ${prov.access}</div>
+          <div><b>Notable Features:</b> ${prov.features}</div>
+        `;
+        card.onclick = () => {
+          selectedProvider = (selectedProvider === idx) ? null : idx;
+          renderProviders();
+          renderTable();
+          renderDetails();
+        };
+        providersListDiv.appendChild(card);
+      });
+    }
+
+    // Table rendering
+    function renderTable() {
+      const table = document.getElementById('capabilities-table');
+      let html = '<thead><tr><th>Capability</th>';
+      providers.forEach(p =>
+        html += `<th style="background:${p.color};color:#fff">${p.name}</th>`);
+      html += '</tr></thead><tbody>';
+      capabilities.forEach(row => {
+        html += `<tr><td>${row.capability}</td>`;
+        providers.forEach((p, idx) => {
+          let val = row[p.name];
+          let tdClass = (selectedProvider === idx) ? 'selected' : '';
+          html += `<td class="${tdClass}">${val}</td>`;
+        });
+        html += '</tr>';
+      });
+      html += '</tbody>';
+      table.innerHTML = html;
+    }
+
+    // Details panel
+    function renderDetails() {
+      const panel = document.getElementById('details-panel');
+      if (selectedProvider === null) {
+        panel.style.display = 'none';
+        panel.innerHTML = '';
+        return;
+      }
+      const p = providers[selectedProvider];
+      let html = `<h2 style="color:${p.color}">${p.name} - Details</h2>
+      <ul>
+        <li><b>Current Models:</b> ${p.currentModels}</li>
+        <li><b>Key Strengths:</b> ${p.strengths}</li>
+        <li><b>Access Points:</b> ${p.access}</li>
+        <li><b>Notable Features:</b> ${p.features}</li>
+      </ul>
+      <h3>Capabilities</h3>
+      <ul>`;
+      capabilities.forEach(row => {
+        html += `<li><b>${row.capability}:</b> ${row[p.name]}</li>`;
+      });
+      html += '</ul>';
+      panel.innerHTML = html;
+      panel.style.display = '';
+    }
+
+    // Initial render
+    renderProviders();
+    renderTable();
+    renderDetails();
+  </script>
+</body>
+</html>
